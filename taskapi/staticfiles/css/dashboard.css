@@ -6,3 +6,4 @@
 .table tr:hover { background:rgba(255,255,255,.02); }
 .badge { padding:.2rem .5rem; border-radius:999px; border:1px solid var(--border); font-size:.75rem; }
 .badge-high { background:#1f2b22; border-color:#3a6b4f; color:#a6e3c5; }
+

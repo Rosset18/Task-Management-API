@@ -63,3 +63,8 @@ button.btn{cursor:pointer}
   --accent:#80ed99;
   --panel:#0f1f19;
 }
+
+.taskbar { display:flex; gap:.5rem; flex-wrap:wrap; margin:.6rem 0 0; }
+.chip { padding:.15rem .6rem; border:1px solid var(--border); border-radius:999px; font-size:.85rem; background:var(--panel); color:var(--text); text-decoration:none; }
+.chip:hover { filter:brightness(1.06); }
+

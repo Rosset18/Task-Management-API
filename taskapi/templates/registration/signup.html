@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Sign up | FocusFlow{% endblock %}
-{% block body_class %}theme-ink{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endblock %}
+{% block title %}Sign up · Focus Flow{% endblock %}
 
 {% block content %}
-<div class="auth-wrap">
-  <div class="card auth-card">
-    <h2>Create your account</h2>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button class="btn" type="submit">Sign up</button>
-    </form>
+  <div class="auth-wrap">
+    <div class="card auth-card narrow">
+      <h2 class="center">Create your account</h2>
+      <form method="post">
+        {% csrf_token %}
+        <label>Username</label>
+        {{ form.username }}
+        <label>Email</label>
+        {{ form.email }}
+        <label>First name</label>
+        {{ form.first_name }}
+        <label>Last name</label>
+        {{ form.last_name }}
+        <label>Password</label>
+        {{ form.password }}
+        <label>Confirm password</label>
+        {{ form.password_confirm }}
+        {% if form.non_field_errors %}
+          <div class="hint" style="color:#ffb4b4;">{{ form.non_field_errors|striptags }}</div>
+        {% endif %}
+        <div style="margin-top:.8rem;">
+          <button class="btn btn-gold" type="submit">Create account</button>
+          <a class="btn btn-ghost" href="{% url 'login' %}">I have an account</a>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 {% endblock %}
 

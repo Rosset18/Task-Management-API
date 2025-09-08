@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Profile · Focus Flow{% endblock %}
+
+{% block content %}
+  <div class="card narrow">
+    <h2 style="margin:0 0 .6rem 0;">Your Profile</h2>
+    <form method="post">
+      {% csrf_token %}
+      <label>Name</label>
+      {{ form.name }}
+      <label>Occupation</label>
+      {{ form.occupation }}
+      <label>Age</label>
+      {{ form.age }}
+      <label>Language</label>
+      {{ form.language }}
+      <div style="margin-top:.8rem;">
+        <button class="btn btn-gold" type="submit">Save</button>
+        <a class="btn btn-ghost" href="{% url 'dashboard' %}">Back</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+

@@ -1,38 +1,55 @@
-from django.utils import timezone
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import TemplateView, FormView
-from django.shortcuts import redirect
+from datetime import datetime, timedelta, date
+import calendar
+
+from django.contrib import messages
 from django.contrib.auth import login
-from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
+from django.views.generic import TemplateView, FormView, CreateView, UpdateView
 
-from rest_framework import viewsets, mixins, status
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.filters import SearchFilter, OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth import get_user_model
+from .models import Task, Profile
+from .forms import SignupForm, TaskForm, QuickTaskForm, ProfileForm
 
-# Safe import for 2FA; fall back to a no-op mixin if not installed
-try:
-    if getattr(settings, "USE_2FA", False):
-        from two_factor.views import OTPRequiredMixin as _OTPRequiredMixin
-    else:
-        raise ImportError
-except Exception:
-    class _OTPRequiredMixin:
-        """No-op mixin used when 2FA is disabled/unavailable."""
-        pass
+# --- News (free RSS) ---
+def fetch_news(limit=6):
+    try:
+        import feedparser
+        # Technology/World feeds (no API key)
+        feeds = [
+            "https://feeds.bbci.co.uk/news/technology/rss.xml",
+            "https://feeds.bbci.co.uk/news/world/rss.xml",
+        ]
+        items = []
+        for url in feeds:
+            d = feedparser.parse(url)
+            for e in d.entries[:limit]:
+                items.append({
+                    "title": e.get("title", "Headline"),
+                    "link": e.get("link", "#"),
+                    "published": e.get("published", ""),
+                    "source": d.feed.get("title", "News"),
+                })
+        # de-dupe by title, keep order
+        seen = set(); unique = []
+        for it in items:
+            if it["title"] not in seen:
+                seen.add(it["title"])
+                unique.append(it)
+        return unique[:limit]
+    except Exception:
+        return []
 
-from .models import Task, Notification, TaskHistory
-from .serializers import TaskSerializer, NotificationSerializer, RegisterSerializer, TaskHistorySerializer
-from .permissions import IsOwner
-from .filters import TaskFilter, NotificationFilter
-from .forms import SignupForm
+# --- Helpers ---
+def display_name_for(user):
+    prof = Profile.objects.filter(user=user).first()
+    return (prof.name or user.first_name or user.username)
 
-# ===== HTML views =====
+# --- Views ---
 class HomeView(TemplateView):
-    template_name = "home.html"
+    template_name = "landing.html"
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect("dashboard")
@@ -41,69 +58,102 @@ class HomeView(TemplateView):
 class SignupView(FormView):
     template_name = "registration/signup.html"
     form_class = SignupForm
+    success_url = reverse_lazy("dashboard")
     def form_valid(self, form):
         user = form.save()
+        # create paired profile
+        Profile.objects.get_or_create(user=user, defaults={"name": user.first_name or user.username})
         login(self.request, user)
-        return redirect("dashboard")
+        messages.success(self.request, "Welcome to Focus Flow!")
+        return super().form_valid(form)
 
-class DashboardView(LoginRequiredMixin, _OTPRequiredMixin, TemplateView):
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "dashboard.html"
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        user = self.request.user
-        ctx["recent_tasks"] = Task.objects.filter(user=user).order_by("-created_at")[:20]
-        ctx["recent_notifications"] = Notification.objects.filter(user=user).order_by("-created_at")[:20]
+        u = self.request.user
+        ctx["greeting"] = display_name_for(u)
+        ctx["quick_form"] = QuickTaskForm()
+        ctx["tasks"] = Task.objects.filter(user=u).order_by("-created_at")[:30]
+        ctx["news"] = fetch_news(limit=6)
         return ctx
 
-# ===== API views =====
-class RegisterView(CreateAPIView):
-    authentication_classes = []  # allow anonymous registration
-    permission_classes = []
-    serializer_class = RegisterSerializer
+class ProfileEditView(LoginRequiredMixin, FormView):
+    template_name = "profile.html"
+    form_class = ProfileForm
+    success_url = reverse_lazy("profile")
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        kwargs["instance"] = profile
+        return kwargs
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Profile updated.")
+        return super().form_valid(form)
 
-class TaskViewSet(viewsets.ModelViewSet):
-    serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = TaskFilter
-    search_fields = ["title", "description"]
-    ordering_fields = ["created_at", "due_date", "completed_at", "priority", "status"]
+class TaskCreateView(LoginRequiredMixin, CreateView):
+    model = Task
+    template_name = "task_form.html"
+    form_class = TaskForm
+    success_url = reverse_lazy("dashboard")
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        messages.success(self.request, "Task created.")
+        return super().form_valid(form)
 
+class TaskUpdateView(LoginRequiredMixin, UpdateView):
+    model = Task
+    template_name = "task_form.html"
+    form_class = TaskForm
+    success_url = reverse_lazy("dashboard")
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user)
+    def form_valid(self, form):
+        messages.success(self.request, "Task updated.")
+        return super().form_valid(form)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+@login_required
+def task_delete_view(request, pk):
+    if request.method == "POST":
+        task = get_object_or_404(Task, pk=pk, user=request.user)
+        task.delete()
+        messages.success(request, "Task deleted.")
+        return redirect("dashboard")
+    return redirect("dashboard")
 
-    @action(detail=True, methods=["post"])
-    def complete(self, request, pk=None):
-        task = self.get_object()
+@login_required
+def task_complete_view(request, pk):
+    if request.method == "POST":
+        task = get_object_or_404(Task, pk=pk, user=request.user)
         task.status = "done"
-        if task.completed_at is None:
-            task.completed_at = timezone.now()
+        task.completed_at = datetime.now()
         task.save(update_fields=["status", "completed_at"])
-        serializer = self.get_serializer(task)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        messages.success(request, "Task marked complete.")
+        return redirect("dashboard")
+    return redirect("dashboard")
 
-    @action(detail=True, methods=["get"])
-    def history(self, request, pk=None):
-        qs = TaskHistory.objects.filter(task_id=pk, user=request.user).order_by("-created_at")
-        page = self.paginate_queryset(qs)
-        ser = TaskHistorySerializer(page or qs, many=True)
-        return self.get_paginated_response(ser.data) if page is not None else Response(ser.data)
-
-class NotificationViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_class = NotificationFilter
-    ordering_fields = ["created_at"]
-
-    def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
-
-    @action(detail=False, methods=["post"])
-    def mark_all_read(self, request):
-        count = self.get_queryset().filter(is_read=False).update(is_read=True)
-        return Response({"updated": count})
+class CalendarView(LoginRequiredMixin, TemplateView):
+    template_name = "calendar.html"
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        today = date.today()
+        year = int(self.request.GET.get("year", today.year))
+        month = int(self.request.GET.get("month", today.month))
+        cal = calendar.Calendar(firstweekday=0)
+        month_days = list(cal.itermonthdates(year, month))  # includes spillover days
+        # tasks by date
+        user_tasks = Task.objects.filter(user=self.request.user, due_date__isnull=False)
+        tasks_by_day = {}
+        for t in user_tasks:
+            d = t.due_date.date()
+            tasks_by_day.setdefault(d, []).append(t)
+        ctx.update({
+            "year": year,
+            "month": month,
+            "month_name": calendar.month_name[month],
+            "days": month_days,
+            "tasks_by_day": tasks_by_day,
+        })
+        return ctx
 

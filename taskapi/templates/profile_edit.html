@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Your Profile{% endblock %}
+
+{% block content %}
+  <div class="card narrow">
+    <h2>👤 Your Profile</h2>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label for="{{ form.display_name.id_for_label }}">Display name</label>
+      {{ form.display_name }}
+      <label for="{{ form.bio.id_for_label }}">Bio</label>
+      {{ form.bio }}
+      {% if form.avatar %}
+        <label for="{{ form.avatar.id_for_label }}">Avatar</label>
+        {{ form.avatar }}
+      {% endif %}
+      <div style="margin-top:.8rem;">
+        <button class="btn" type="submit">Save</button>
+        <a class="btn btn-ghost" href="{% url 'home' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+

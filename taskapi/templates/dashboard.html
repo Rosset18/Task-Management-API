@@ -1,82 +1,85 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Dashboard | FocusFlow{% endblock %}
-{% block body_class %}theme-emerald{% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-{% endblock %}
+{% block title %}Dashboard · Focus Flow{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
+  <section class="card">
+    <h2 style="margin:0 0 .3rem 0;">Hi {{ greeting }} 👋</h2>
+    <p class="hint">Here’s your recent activity.</p>
+  </section>
 
-<div class="kpis">
-  <div class="kpi"><div class="label">Open</div><div class="value">{{ recent_tasks|length }}</div></div>
-  <div class="kpi"><div class="label">Notifications</div><div class="value">{{ recent_notifications|length }}</div></div>
-  <div class="kpi"><div class="label">API</div><div class="value">/api/</div></div>
-</div>
+  <div class="grid two-col" style="margin-top:1rem;">
+    <!-- Left: Tasks -->
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:.6rem;">
+        <h3 style="margin:0;">Your Tasks</h3>
+        <span class="spacer"></span>
+        <a class="btn btn-ghost btn-sm" href="{% url 'task_new' %}">+ New Task</a>
+      </div>
 
-<div class="grid two-col">
-  <div class="card">
-    <h2>Your Recent Tasks</h2>
-    <table class="table">
-      <thead>
-        <tr><th>Title</th><th>Priority</th><th>Status</th><th>Due</th><th>Created</th></tr>
-      </thead>
-      <tbody>
-        {% for t in recent_tasks %}
-        <tr>
-          <td>{{ t.title }}</td>
-          <td>
-            {% if t.priority == 'high' %}
-              <span class="badge badge-high">High</span>
-            {% else %}
-              <span class="badge">{{ t.priority }}</span>
-            {% endif %}
-          </td>
-          <td>{{ t.status }}</td>
-          <td>{% if t.due_date %}{{ t.due_date|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
-          <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
-        </tr>
+      <!-- Quick add -->
+      <form method="post" action="{% url 'task_new' %}" style="margin-top:.8rem;" onsubmit="return true;">
+        {% csrf_token %}
+        <div class="grid two-col">
+          <input type="text" name="title" placeholder="Quick task title" required>
+          <input type="datetime-local" name="due_date">
+        </div>
+        <button class="btn btn-gold btn-sm" style="margin-top:.5rem;" formaction="{% url 'task_new' %}">Add quick task</button>
+      </form>
+
+      <table class="table" style="margin-top:.8rem;">
+        <thead>
+          <tr><th>Title</th><th>Priority</th><th>Status</th><th>Due</th><th>Created</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for t in tasks %}
+          <tr data-task-row="{{ t.id }}">
+            <td>{{ t.title }}</td>
+            <td class="badge badge-{{ t.priority }}">{{ t.get_priority_display }}</td>
+            <td>{{ t.get_status_display }}</td>
+            <td>{% if t.due_date %}{{ t.due_date|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+            <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              <a class="btn btn-ghost btn-sm" href="{% url 'task_edit' t.id %}">Edit</a>
+              <button class="btn btn-ghost btn-sm" data-complete-task="{{ t.id }}">Complete</button>
+              <form method="post" action="{% url 'task_delete' t.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button class="btn btn-ghost btn-sm" data-delete-task="{{ t.id }}">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="hint">No tasks yet. Create one above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Right: News -->
+    <div class="card">
+      <h3 style="margin:0;">📰 News Feed</h3>
+      <ul class="list">
+        {% for n in news %}
+          <li>
+            <a href="{{ n.link }}" target="_blank" rel="noopener">{{ n.title }}</a>
+            <div class="hint">{{ n.source }} · {{ n.published }}</div>
+          </li>
         {% empty %}
-        <tr><td colspan="5">No tasks yet.</td></tr>
+          <li class="hint">No news right now.</li>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
+      </ul>
 
-  <div class="card">
-    <h2>Notifications</h2>
-    <form method="post" action="/api/notifications/mark_all_read/" onsubmit="return false;">
-      <button class="btn btn-ghost" id="markAll">Mark all read</button>
-    </form>
-    <ul class="list">
-      {% for n in recent_notifications %}
-        <li class="notif {% if not n.is_read %}unread{% endif %}">
-          <span>{{ n.message }}</span>
-          <time>{{ n.created_at|date:"Y-m-d H:i" }}</time>
-        </li>
-      {% empty %}
-        <li>No notifications.</li>
-      {% endfor %}
-    </ul>
-    <script>
-      document.getElementById('markAll').addEventListener('click', async () => {
-        const resp = await fetch('/api/notifications/mark_all_read/', {
-          method: 'POST',
-          headers: {'X-CSRFToken': getCookie('csrftoken')}
-        });
-        if (resp.ok) location.reload();
-      });
-      function getCookie(name){const v=`; ${document.cookie}`.split(`; ${name}=`);if(v.length===2)return v.pop().split(';').shift();}
-    </script>
+      <!-- Fun: Pomodoro -->
+      <div class="card" style="margin-top:1rem;">
+        <h4 style="margin:0 0 .4rem 0;">⏱️ Quick Pomodoro</h4>
+        <div id="pomodoro" data-min="25" style="display:flex;gap:.5rem;align-items:center;">
+          <div id="pomo-display" class="badge">25:00</div>
+          <button class="btn btn-gold btn-sm" id="pomo-start">Start</button>
+          <button class="btn btn-ghost btn-sm" id="pomo-stop">Stop</button>
+          <button class="btn btn-ghost btn-sm" id="pomo-reset">Reset</button>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
-
-<p class="hint">
-  API quick links:
-  <a href="/api/">/api/</a>,
-  <a href="/api/tasks/">/api/tasks/</a>,
-  <a href="/api/notifications/">/api/notifications/</a>
-</p>
 {% endblock %}
 

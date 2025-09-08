@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Notes{% endblock %}
+
+{% block content %}
+  <div class="grid two-col">
+    <div class="card">
+      <h2>📝 Add a note</h2>
+      <form method="post">
+        {% csrf_token %}
+        <label for="{{ form.title.id_for_label }}">Title</label>
+        {{ form.title }}
+        <label for="{{ form.body.id_for_label }}">Body</label>
+        {{ form.body }}
+        <div style="margin-top:.8rem;">
+          <button class="btn" type="submit">Add</button>
+          <a class="btn btn-ghost" href="{% url 'home' %}">Back</a>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <h2>📚 Your notes</h2>
+      {% if notes %}
+        <table class="table">
+          <thead><tr><th>Title</th><th>Created</th></tr></thead>
+          <tbody>
+            {% for n in notes %}
+              <tr>
+                <td>{{ n.title }}</td>
+                <td>{{ n.created_at|date:"Y-m-d H:i" }}</td>
+              </tr>
+              {% if n.body %}
+                <tr><td colspan="2"><div class="hint">{{ n.body|linebreaksbr }}</div></td></tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="hint">No notes yet. Add your first note on the left.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

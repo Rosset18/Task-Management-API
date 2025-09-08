@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Task · Focus Flow{% endblock %}
+
+{% block content %}
+  <div class="card narrow">
+    <h2 style="margin:0 0 .6rem 0;">Task</h2>
+    <form method="post">
+      {% csrf_token %}
+      <label>Title</label>
+      {{ form.title }}
+      <label>Description</label>
+      {{ form.description }}
+      <label>Priority</label>
+      {{ form.priority }}
+      <label>Status</label>
+      {{ form.status }}
+      <label>Due date</label>
+      {{ form.due_date }}
+      <div style="margin-top:.8rem;">
+        <button class="btn btn-gold" type="submit">Save</button>
+        <a class="btn btn-ghost" href="{% url 'dashboard' %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+

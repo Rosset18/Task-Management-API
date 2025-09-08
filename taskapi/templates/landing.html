@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Welcome · Focus Flow{% endblock %}
+
+{% block content %}
+  <section class="hero card">
+    <h1 class="center big">Welcome to <span class="gold">Focus Flow</span></h1>
+    <p class="center hint">Organize tasks. Stay focused. Move fast.</p>
+    <div class="center" style="margin-top:1rem;">
+      <a class="btn btn-gold" href="{% url 'login' %}">Login</a>
+      <a class="btn btn-ghost" href="{% url 'signup' %}">Create account</a>
+    </div>
+  </section>
+
+  <div class="grid two-col">
+    <div class="card">
+      <h3>🚀 Why Focus Flow?</h3>
+      <p>Modern task management with a calendar, headlines, and quick actions—wrapped in a slick black &amp; gold UI.</p>
+    </div>
+    <div class="card">
+      <h3>📰 Live Headlines</h3>
+      <p>We pull fresh news from free RSS feeds so you can catch up at a glance.</p>
+    </div>
+  </div>
+{% endblock %}
+

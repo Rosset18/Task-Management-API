@@ -1,49 +1,37 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Welcome | FocusFlow{% endblock %}
-{% block body_class %}theme-mint{% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/home.css' %}">
-{% endblock %}
+{% block title %}Welcome{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <div>
-    <h1>Organize tasks. Stay calm. Ship faster.</h1>
-    <p>Log in or create an account to manage your tasks. The API lives under <code>/api/</code>.</p>
-  </div>
-</section>
+  <section class="hero card">
+    {% if request.user.is_authenticated %}
+      <h1>Hi {{ display_name|default:request.user.username }} 👋</h1>
+      <p class="hint">Welcome back! Jump into your tasks or jot a quick note for today.</p>
+    {% else %}
+      <h1>Welcome, friend 👋</h1>
+      <p class="hint">Create an account or sign in to start managing tasks and notes.</p>
+    {% endif %}
+    {% include "partials/taskbar.html" %}
+  </section>
 
-<div class="grid two-col" style="margin-top:1rem">
-  <div class="card feature">
-    <h2>Login</h2>
-    <form method="post" action="/account/login/">
-      {% csrf_token %}
-      <input type="hidden" name="next" value="/dashboard/" />
-      <label>Username</label>
-      <input type="text" name="username" required />
-      <label>Password</label>
-      <input type="password" name="password" required />
-      <button type="submit" class="btn">Login</button>
-      <p class="hint">Forgot password? <a href="/accounts/password_reset/">Reset it</a>.</p>
-    </form>
+  <div class="grid two-col">
+    <div class="card">
+      <h3>🚀 Quick Start</h3>
+      {% if request.user.is_authenticated %}
+        <p><a class="btn" href="{% url 'dashboard' %}">Go to Dashboard</a></p>
+        <p><a class="btn btn-ghost" href="{% url 'notes' %}">Open Notes</a></p>
+      {% else %}
+        <p><a class="btn" href="{% url 'signup' %}">Create your account</a></p>
+        <p><a class="btn btn-ghost" href="{% url 'login' %}">I already have an account</a></p>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>🎨 Make it yours</h3>
+      <p>Use the top-right buttons to switch theme or adjust density.</p>
+      {% if request.user.is_authenticated %}
+        <p><a class="btn btn-ghost" href="{% url 'profile_edit' %}">Edit Profile</a></p>
+      {% endif %}
+    </div>
   </div>
-
-  <div class="card">
-    <h2>Sign up</h2>
-    <form method="post" action="/accounts/signup/">
-      {% csrf_token %}
-      <label>Username</label>
-      <input type="text" name="username" required />
-      <label>Email</label>
-      <input type="email" name="email" required />
-      <label>Password</label>
-      <input type="password" name="password1" required />
-      <label>Confirm Password</label>
-      <input type="password" name="password2" required />
-      <button type="submit" class="btn">Create account</button>
-    </form>
-  </div>
-</div>
 {% endblock %}
 
