@@ -1,0 +1,10 @@
+.hero {
+  padding: 3rem 0 2rem;
+  background: radial-gradient(600px 200px at 20% -20%, rgba(77,225,161,.15), transparent),
+              radial-gradient(600px 200px at 80% 0%, rgba(44,211,184,.12), transparent);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0 0 1.25rem 1.25rem;
+}
+.hero h1 { font-size: 2.2rem; margin: 0 0 .5rem; }
+.hero p  { color: var(--muted); max-width: 60ch; }
+.card.feature { border-left: 3px solid var(--brand); }

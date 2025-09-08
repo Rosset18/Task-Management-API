@@ -1,0 +1,7 @@
+.auth-wrap { display:grid; place-items:center; min-height:60vh; }
+.auth-card { width:min(520px, 100%); margin:1rem auto; position:relative; overflow:hidden; }
+.auth-card::before {
+  content:''; position:absolute; inset:-40% -10% auto auto; height:220px; width:220px;
+  background:radial-gradient(closest-side, var(--brand) 0%, transparent 70%);
+  opacity:.08; transform:translate(20%,-20%);
+}

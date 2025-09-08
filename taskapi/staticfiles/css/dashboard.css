@@ -1,0 +1,8 @@
+.kpis { display:grid; grid-template-columns: repeat(3,1fr); gap:1rem; margin:1rem 0; }
+.kpi  { background:linear-gradient(180deg, var(--panel), rgba(0,0,0,.15));
+        border:1px solid var(--border); padding:1rem; border-radius:1rem; }
+.kpi .label { color:var(--muted); font-size:.9rem; }
+.kpi .value { font-size:1.6rem; font-weight:700; }
+.table tr:hover { background:rgba(255,255,255,.02); }
+.badge { padding:.2rem .5rem; border-radius:999px; border:1px solid var(--border); font-size:.75rem; }
+.badge-high { background:#1f2b22; border-color:#3a6b4f; color:#a6e3c5; }

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard | FocusFlow{% endblock %}
+{% block body_class %}theme-emerald{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="kpis">
+  <div class="kpi"><div class="label">Open</div><div class="value">{{ recent_tasks|length }}</div></div>
+  <div class="kpi"><div class="label">Notifications</div><div class="value">{{ recent_notifications|length }}</div></div>
+  <div class="kpi"><div class="label">API</div><div class="value">/api/</div></div>
+</div>
+
+<div class="grid two-col">
+  <div class="card">
+    <h2>Your Recent Tasks</h2>
+    <table class="table">
+      <thead>
+        <tr><th>Title</th><th>Priority</th><th>Status</th><th>Due</th><th>Created</th></tr>
+      </thead>
+      <tbody>
+        {% for t in recent_tasks %}
+        <tr>
+          <td>{{ t.title }}</td>
+          <td>
+            {% if t.priority == 'high' %}
+              <span class="badge badge-high">High</span>
+            {% else %}
+              <span class="badge">{{ t.priority }}</span>
+            {% endif %}
+          </td>
+          <td>{{ t.status }}</td>
+          <td>{% if t.due_date %}{{ t.due_date|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+          <td>{{ t.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No tasks yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Notifications</h2>
+    <form method="post" action="/api/notifications/mark_all_read/" onsubmit="return false;">
+      <button class="btn btn-ghost" id="markAll">Mark all read</button>
+    </form>
+    <ul class="list">
+      {% for n in recent_notifications %}
+        <li class="notif {% if not n.is_read %}unread{% endif %}">
+          <span>{{ n.message }}</span>
+          <time>{{ n.created_at|date:"Y-m-d H:i" }}</time>
+        </li>
+      {% empty %}
+        <li>No notifications.</li>
+      {% endfor %}
+    </ul>
+    <script>
+      document.getElementById('markAll').addEventListener('click', async () => {
+        const resp = await fetch('/api/notifications/mark_all_read/', {
+          method: 'POST',
+          headers: {'X-CSRFToken': getCookie('csrftoken')}
+        });
+        if (resp.ok) location.reload();
+      });
+      function getCookie(name){const v=`; ${document.cookie}`.split(`; ${name}=`);if(v.length===2)return v.pop().split(';').shift();}
+    </script>
+  </div>
+</div>
+
+<p class="hint">
+  API quick links:
+  <a href="/api/">/api/</a>,
+  <a href="/api/tasks/">/api/tasks/</a>,
+  <a href="/api/notifications/">/api/notifications/</a>
+</p>
+{% endblock %}
+
