@@ -8,7 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 
-# Comma-separated; keep your Render host + local dev hosts
 ALLOWED_HOSTS = [
     h.strip() for h in os.getenv(
         "ALLOWED_HOSTS",
@@ -24,12 +23,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core",
-    "rest_framework",  # optional; remove if unused
+    "rest_framework",  
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    # WhiteNoise MUST be right after SecurityMiddleware
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -59,12 +57,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "focusflow.wsgi.application"
 
-# --- Database (Render Postgres via DATABASE_URL; local fallback to SQLite) ---
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=False,  # Render internal connection doesn't need SSL
+        ssl_require=False, 
     )
 }
 
@@ -87,7 +84,6 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Use hashed/compressed storage only in production (avoids dev manifest issues)
 if not DEBUG:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
@@ -107,7 +103,6 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
 
-# CSRF: trust Render origins (and optional custom domain if set)
 CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"]
 _render_url = os.getenv("RENDER_EXTERNAL_URL")  # e.g. https://focusflow-xyz.onrender.com
 if _render_url:
