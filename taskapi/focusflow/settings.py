@@ -1,12 +1,19 @@
 import os
 from pathlib import Path
+import dj_database_url
 
+# ------------------------------
+# BASE SETTINGS
+# ------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
+# ------------------------------
+# INSTALLED APPS
+# ------------------------------
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -15,10 +22,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "core",
+    "rest_framework",  # for API
 ]
 
+# ------------------------------
+# MIDDLEWARE
+# ------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serve static files in production
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -27,6 +39,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# ------------------------------
+# URLS AND TEMPLATES
+# ------------------------------
 ROOT_URLCONF = "focusflow.urls"
 
 TEMPLATES = [
@@ -47,13 +62,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "focusflow.wsgi.application"
 
+# ------------------------------
+# DATABASE
+# ------------------------------
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",  # local fallback
+        conn_max_age=600,
+        ssl_require=False
+    )
 }
 
+# ------------------------------
+# PASSWORD VALIDATORS
+# ------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME":"django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME":"django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -61,17 +83,45 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME":"django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# ------------------------------
+# INTERNATIONALIZATION
+# ------------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Johannesburg"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# ------------------------------
+# STATIC FILES
+# ------------------------------
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# ------------------------------
+# DEFAULT AUTO FIELD
+# ------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ------------------------------
+# LOGIN SETTINGS
+# ------------------------------
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "home"
+
+# ------------------------------
+# DJANGO REST FRAMEWORK SETTINGS (optional for API)
+# ------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.BasicAuthentication",
+    ],
+}
+
